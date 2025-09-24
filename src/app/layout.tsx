@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { HeaderBar } from "@/components/layout/HeaderBar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,9 +26,17 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-[var(--background)] text-[var(--foreground)]`}
       >
-        {children}
+        <div className="flex min-h-screen flex-col">
+          <header className="sticky top-0 z-30 border-b border-white/10 bg-black/40 backdrop-blur supports-[backdrop-filter]:bg-black/30">
+            <HeaderBar />
+          </header>
+          <main className="flex-1">{children}</main>
+          <footer className="border-t border-white/10 py-6 text-center text-xs text-white/40">
+            © {new Date().getFullYear()} InvoicePro
+          </footer>
+        </div>
       </body>
     </html>
   );

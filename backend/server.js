@@ -1,25 +1,27 @@
-require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
 const morgan = require('morgan');
-const { errorHandler } = require('./src/middleware/errorHandler');
-const { logger } = require('./src/utils/logger');
-const routes = require('./src/routes');
-const rateLimiter = require('./src/middleware/rateLimiter');
+const { errorHandler } = require('./middleware/errorHandler');
+const { logger } = require('./utils/logger');
+const routes = require('./routes/index');
+const rateLimiter = require('./middleware/rateLimiter');
+const dotenv = require('dotenv');
 
 const app = express();
 
+dotenv.config({ path: './config.env' });
 // Security Middleware
 app.use(helmet());
 app.use(
   cors({
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || '*',
+    origin: 'http://localhost:3000',
     credentials: true,
   }),
 );
+
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -47,12 +49,10 @@ app.get('/health', (req, res) => {
 // Error Handler
 app.use(errorHandler);
 
+// console.log(process.env.MONGODB_URI);
 // Database Connection
 mongoose
-  .connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(process.env.MONGODB_URI)
   .then(() => {
     logger.info('MongoDB connected successfully');
     const PORT = process.env.PORT || 5000;

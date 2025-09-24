@@ -6,7 +6,7 @@ const customerSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
-      unique: true,
+      // unique: true,
     },
     firstName: {
       type: String,
@@ -89,7 +89,7 @@ const customerSchema = new mongoose.Schema(
 );
 
 // Indexes
-customerSchema.index({ user: 1 });
+customerSchema.index({ user: 1, unique: true });
 customerSchema.index({ 'invoices.pending': 1 });
 customerSchema.index({ createdAt: -1 });
 

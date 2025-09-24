@@ -18,16 +18,16 @@ const organizationSchema = new mongoose.Schema(
       required: [true, 'GST ID is required'],
       unique: true,
       uppercase: true,
-      match: [
-        /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/,
-        'Invalid GST ID format',
-      ],
+      // match: [
+      //   /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/,
+      //   'Invalid GST ID format',
+      // ],
     },
     panNumber: {
       type: String,
       required: true,
       uppercase: true,
-      match: [/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, 'Invalid PAN format'],
+      // match: [/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, 'Invalid PAN format'],
     },
     registrationNumber: {
       type: String,
@@ -77,11 +77,11 @@ const organizationSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Invoice',
           },
-          receivedFrom: {
+          fromCustomer: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Customer',
           },
-          receivedAt: {
+          paidAt: {
             type: Date,
             default: Date.now,
           },
@@ -141,8 +141,8 @@ const organizationSchema = new mongoose.Schema(
 );
 
 // Indexes
-organizationSchema.index({ user: 1 });
-organizationSchema.index({ gstId: 1 });
+organizationSchema.index({ user: 1, unique: true });
+organizationSchema.index({ gstId: 1, unique: true });
 organizationSchema.index({ name: 'text' });
 organizationSchema.index({ createdAt: -1 });
 

@@ -47,7 +47,7 @@ const invoiceSchema = new mongoose.Schema(
     customer: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Customer',
-      required: true,
+      required: false,
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
@@ -142,7 +142,7 @@ const invoiceSchema = new mongoose.Schema(
 );
 
 // Indexes
-invoiceSchema.index({ invoiceNumber: 1 });
+invoiceSchema.index({ invoiceNumber: 1, unique: true });
 invoiceSchema.index({ organization: 1 });
 invoiceSchema.index({ customer: 1 });
 invoiceSchema.index({ status: 1 });

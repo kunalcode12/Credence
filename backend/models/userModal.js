@@ -7,7 +7,7 @@ const userSchema = new mongoose.Schema(
     email: {
       type: String,
       required: [true, 'Email is required'],
-      unique: true,
+      // unique: true,
       lowercase: true,
       trim: true,
       match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email'],
@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['pending', 'customer', 'organization'],
+      enum: ['pending', 'customer', 'organization', 'financer'],
       default: 'pending',
     },
     isActive: {
@@ -62,7 +62,7 @@ const userSchema = new mongoose.Schema(
 );
 
 // Indexes for performance
-userSchema.index({ email: 1 });
+userSchema.index({ email: 1, unique: true });
 userSchema.index({ role: 1 });
 userSchema.index({ createdAt: -1 });
 

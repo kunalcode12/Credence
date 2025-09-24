@@ -1,6 +1,6 @@
-const User = require('../models/User.model');
-const Customer = require('../models/Customer.model');
-const Organization = require('../models/Organization.model');
+const User = require('../models/userModal');
+const Customer = require('../models/customerModel');
+const Organization = require('../models/organizationModel');
 const { validationResult } = require('express-validator');
 const { AppError } = require('../utils/appError');
 const { asyncHandler } = require('../utils/asyncHandler');
@@ -8,6 +8,7 @@ const { logger } = require('../utils/logger');
 
 exports.signup = asyncHandler(async (req, res, next) => {
   const errors = validationResult(req);
+  console.log('Errors checking: ', errors);
   if (!errors.isEmpty()) {
     return next(new AppError('Validation failed', 400, errors.array()));
   }
@@ -130,4 +131,46 @@ exports.chooseRole = asyncHandler(async (req, res, next) => {
           : '/api/v1/organization/profile',
     },
   });
+});
+
+// Get current authenticated user and profile status
+exports.me = asyncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user.id);
+  if (!user) {
+    return next(new AppError('User not found', 404));
+  }
+
+  let profile = { exists: false, id: null, type: null };
+
+  if (user.role === 'customer') {
+    const existing = await Customer.findOne({ user: user._id }).select('_id');
+    if (existing)
+      profile = { exists: true, id: existing._id, type: 'customer' };
+  }
+
+  if (user.role === 'organization') {
+    const existing = await Organization.findOne({ user: user._id }).select(
+      '_id',
+    );
+    if (existing)
+      profile = { exists: true, id: existing._id, type: 'organization' };
+  }
+
+  res.status(200).json({
+    success: true,
+    data: {
+      user: {
+        id: user._id,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        role: user.role,
+      },
+      profile,
+    },
+  });
+});
+
+// Logout (stateless JWT) - client should discard token
+exports.logout = asyncHandler(async (req, res) => {
+  res.status(200).json({ success: true, message: 'Logged out' });
 });
