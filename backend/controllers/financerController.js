@@ -4,6 +4,7 @@ const Invoice = require('../models/invoiceModel');
 const { validationResult } = require('express-validator');
 const { AppError } = require('../utils/appError');
 const { asyncHandler } = require('../utils/asyncHandler');
+const User = require('../models/userModal');
 
 // Create/update financer profile
 exports.createProfile = asyncHandler(async (req, res, next) => {
@@ -32,6 +33,32 @@ exports.addBalance = asyncHandler(async (req, res, next) => {
   if (!financer) return next(new AppError('Financer profile not found', 404));
   await financer.addBalance(amount);
   res.status(200).json({ success: true, data: { balance: financer.balance } });
+});
+
+// Get currently logged-in financer basic info
+exports.getSelf = asyncHandler(async (req, res, next) => {
+  const financer = await Financer.findOne({ user: req.user.id });
+  if (!financer) return next(new AppError('Financer profile not found', 404));
+
+  const user = await User.findById(req.user.id).select('email');
+  const firstName = financer.profile?.firstName || '';
+  const lastName = financer.profile?.lastName || '';
+  const companyName = financer.profile?.companyName || '';
+  const name =
+    companyName ||
+    [firstName, lastName].filter(Boolean).join(' ') ||
+    'Financer';
+
+  res.status(200).json({
+    success: true,
+    data: {
+      financerId: String(financer._id),
+      name,
+      email: user?.email || '',
+      balance: financer.balance,
+      lockedBalance: financer.lockedBalance,
+    },
+  });
 });
 
 exports.myBids = asyncHandler(async (req, res) => {

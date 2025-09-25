@@ -8,6 +8,7 @@ router.use(authorize('financer'));
 
 router.post('/profile', financerController.createProfile);
 router.post('/balance/add', financerController.addBalance);
+router.get('/me', financerController.getSelf);
 router.get('/bids', financerController.myBids);
 router.get('/invoices', financerController.myInvoices);
 router.get('/bought', financerController.getBoughtInvoices);

@@ -112,14 +112,19 @@ exports.cancelBid = asyncHandler(async (req, res, next) => {
   if (!listing) return next(new AppError('Listing not found', 404));
   const bid = listing.bids.id(bidId);
   if (!bid) return next(new AppError('Bid not found', 404));
-  if (!String(bid.financer).equals(String(financer._id)))
+  if (!String(bid.financer) === String(financer._id))
     return next(new AppError('Unauthorized bid', 403));
   if (bid.status !== 'active')
     return next(new AppError('Bid is not active', 400));
 
-  bid.status = 'cancelled';
+  const bidAmount = bid.amount;
+  // Remove the bid subdocument from listing (pull semantics)
+  bid.deleteOne();
   await listing.save();
-  await financer.unlockFunds(bid.amount);
+
+  // Unlock previously locked funds back to financer balance
+  await financer.unlockFunds(bidAmount);
+
   res.status(200).json({ success: true, message: 'Bid cancelled' });
 });
 

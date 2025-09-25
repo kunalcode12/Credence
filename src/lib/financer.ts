@@ -112,3 +112,40 @@ export async function cancelMarketplaceBid(listingId: string, bidId: string) {
     { method: "POST", auth: true }
   );
 }
+
+export type FinancerSelfResponse = {
+  success: boolean;
+  data: {
+    financerId: string;
+    name: string;
+    email: string;
+    balance: number;
+    lockedBalance: number;
+  };
+};
+
+export async function getFinancerSelf() {
+  return apiFetch<FinancerSelfResponse>("/financer/me", { auth: true });
+}
+
+export type MyBidsResponse = {
+  success: boolean;
+  data: {
+    listings: Array<{
+      _id: string;
+      invoice: { _id: string; invoiceNumber?: string; totalAmount?: number };
+      organization: string | { _id: string; name?: string };
+      bids: Array<{
+        _id: string;
+        amount: number;
+        status: string;
+        financer: string | { _id: string };
+      }>;
+      isOpen: boolean;
+    }>;
+  };
+};
+
+export async function getMyBids() {
+  return apiFetch<MyBidsResponse>("/financer/bids", { auth: true });
+}

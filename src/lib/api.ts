@@ -86,3 +86,44 @@ export type NotificationsResponse = {
   success: boolean;
   data: { notifications: Notification[] };
 };
+
+// Marketplace types
+export type MarketplaceListing = {
+  _id: string;
+  invoice: {
+    _id: string;
+    invoiceNumber: string;
+    totalAmount: number;
+    dueDate?: string;
+    status?: string;
+    organization?: { _id: string; name?: string };
+  };
+  organization: { _id: string; name?: string } | string;
+  isOpen: boolean;
+  bids: Array<{
+    _id: string;
+    amount: number;
+    status: string;
+    financer: {
+      _id: string;
+      user?: { email?: string };
+      profile?: { firstName?: string; lastName?: string; companyName?: string };
+    };
+  }>;
+};
+
+export type MarketplaceListResponse = {
+  success: boolean;
+  data: { listings: MarketplaceListing[] };
+};
+
+export async function getMarketplaceListings() {
+  return apiFetch<MarketplaceListResponse>("/marketplace", { auth: true });
+}
+
+export async function placeMarketplaceBid(listingId: string, amount: number) {
+  return apiFetch<{ success: boolean; data: { listing: MarketplaceListing } }>(
+    `/marketplace/${listingId}/bids`,
+    { method: "POST", auth: true, body: { amount } }
+  );
+}
