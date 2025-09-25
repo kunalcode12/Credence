@@ -7,14 +7,22 @@ import {
   organizationActions,
 } from "@/hooks/useOrganization";
 import { LoaderOverlay } from "@/components/ui/LoaderOverlay";
+import { downloadInvoicePdf } from "@/lib/invoiceDownload";
 
 export default function OrganizationDashboardPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
-  const { loading, error, profile, invoices, refresh } =
+  const { loading, error, profile, invoices, revenue, refresh } =
     useOrganizationOverview();
   const [tab, setTab] = useState<
-    "profile" | "all" | "sent" | "paid" | "created" | "overdue" | "filter"
+    | "profile"
+    | "all"
+    | "sent"
+    | "paid"
+    | "created"
+    | "overdue"
+    | "filter"
+    | "bids"
   >("profile");
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
@@ -58,6 +66,7 @@ export default function OrganizationDashboardPage() {
         lastName: string;
         user?: { email: string };
       } | null;
+      isOnBid?: boolean;
     } | null;
     loading: boolean;
   }>({
@@ -81,6 +90,8 @@ export default function OrganizationDashboardPage() {
       );
     return [];
   }, [tab, invoices]);
+
+  console.log("list", list);
 
   async function runFilter() {
     setBusy(true);
@@ -156,6 +167,14 @@ export default function OrganizationDashboardPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={() =>
+              router.push(`/organization/${params.id}/listonmarket`)
+            }
+            className="rounded-md px-3 py-1.5 text-sm text-white/90 ring-1 ring-white/15 hover:bg-white/5"
+          >
+            List invoices in marketplace
+          </button>
+          <button
+            onClick={() =>
               router.push(`/organization/${params.id}/createinvoice`)
             }
             className="rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-black hover:bg-white/90"
@@ -168,6 +187,28 @@ export default function OrganizationDashboardPage() {
           >
             Update profile
           </button>
+        </div>
+      </div>
+
+      {/* Revenue Summary */}
+      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+          <div className="text-xs text-white/60">Total Revenue</div>
+          <div className="mt-1 text-xl font-semibold text-white">
+            ₹ {revenue?.total?.toLocaleString?.() ?? 0}
+          </div>
+        </div>
+        <div className="rounded-lg border border-white/10 bg:white/5 p-4">
+          <div className="text-xs text-white/60">Pending</div>
+          <div className="mt-1 text-xl font-semibold text-white">
+            ₹ {revenue?.pending?.toLocaleString?.() ?? 0}
+          </div>
+        </div>
+        <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+          <div className="text-xs text-white/60">Received</div>
+          <div className="mt-1 text-xl font-semibold text:white">
+            ₹ {revenue?.received?.toLocaleString?.() ?? 0}
+          </div>
         </div>
       </div>
 
@@ -189,6 +230,7 @@ export default function OrganizationDashboardPage() {
                 "created",
                 "overdue",
                 "filter",
+                "bids",
               ] as const
             ).map((t) => (
               <button
@@ -203,6 +245,16 @@ export default function OrganizationDashboardPage() {
                 {t[0].toUpperCase() + t.slice(1)}
               </button>
             ))}
+            {tab === "bids" ? (
+              <div className="mt-2 px-3">
+                <button
+                  onClick={() => router.push(`/organization/${params.id}/bids`)}
+                  className="w-full rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-black hover:bg-white/90"
+                >
+                  See more
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
         <div className="lg:col-span-4">
@@ -225,20 +277,20 @@ export default function OrganizationDashboardPage() {
               </div>
             </div>
           ) : tab === "filter" ? (
-            <div className="rounded-xl border border-white/10 bg-white/5 p-6">
+            <div className="rounded-xl border border-white/10 bg:white/5 p-6">
               <h2 className="mb-4 text-lg font-semibold text-white">
                 Filter Invoices
               </h2>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-white">
+                  <label className="mb-2 block text-sm font-medium text:white">
                     Customer Email
                   </label>
                   <div className="relative">
                     <input
                       placeholder="Search customer email"
                       value={filterEmailQuery}
-                      className="w-full rounded-md border border-white/10 bg-black/40 px-3 py-2 text-white hover:border-white/20 focus:border-white/30 transition-colors"
+                      className="w-full rounded-md border border-white/10 bg:black/40 px-3 py-2 text-white hover:border-white/20 focus:border-white/30 transition-colors"
                       onChange={(e) => searchFilterEmail(e.target.value)}
                     />
                     {filterEmailResults.length > 0 && (
@@ -283,12 +335,12 @@ export default function OrganizationDashboardPage() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-white">
+                  <label className="mb-2 block text-sm font-medium text:white">
                     Due Before
                   </label>
                   <input
                     type="date"
-                    className="w-full rounded-md border border-white/10 bg-black/40 px-3 py-2 text-white hover:border-white/20 focus:border-white/30 transition-colors"
+                    className="w-full rounded-md border border-white/10 bg:black/40 px-3 py-2 text-white hover:border-white/20 focus:border-white/30 transition-colors"
                     onChange={(e) =>
                       setFilters((f) => ({ ...f, dueBefore: e.target.value }))
                     }
@@ -296,12 +348,12 @@ export default function OrganizationDashboardPage() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-white">
+                  <label className="mb-2 block text-sm font-medium text:white">
                     Due After
                   </label>
                   <input
                     type="date"
-                    className="w-full rounded-md border border-white/10 bg-black/40 px-3 py-2 text-white hover:border-white/20 focus:border-white/30 transition-colors"
+                    className="w-full rounded-md border border-white/10 bg:black/40 px-3 py-2 text-white hover:border:white/20 focus:border:white/30 transition-colors"
                     onChange={(e) =>
                       setFilters((f) => ({ ...f, dueAfter: e.target.value }))
                     }
@@ -309,7 +361,7 @@ export default function OrganizationDashboardPage() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-white">
+                  <label className="mb-2 block text-sm font-medium text:white">
                     Min Total (₹)
                   </label>
                   <input
@@ -317,7 +369,7 @@ export default function OrganizationDashboardPage() {
                     min="0"
                     step="0.01"
                     placeholder="0.00"
-                    className="w-full rounded-md border border-white/10 bg-black/40 px-3 py-2 text-white hover:border-white/20 focus:border-white/30 transition-colors"
+                    className="w-full rounded-md border border-white/10 bg:black/40 px-3 py-2 text-white hover:border:white/20 focus:border-white/30 transition-colors"
                     onChange={(e) =>
                       setFilters((f) => ({ ...f, minTotal: e.target.value }))
                     }
@@ -325,7 +377,7 @@ export default function OrganizationDashboardPage() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-white">
+                  <label className="mb-2 block text-sm font-medium text:white">
                     Max Total (₹)
                   </label>
                   <input
@@ -333,7 +385,7 @@ export default function OrganizationDashboardPage() {
                     min="0"
                     step="0.01"
                     placeholder="0.00"
-                    className="w-full rounded-md border border-white/10 bg-black/40 px-3 py-2 text-white hover:border-white/20 focus:border-white/30 transition-colors"
+                    className="w-full rounded-md border border-white/10 bg:black/40 px-3 py-2 text-white hover:border:white/20 focus:border:white/30 transition-colors"
                     onChange={(e) =>
                       setFilters((f) => ({ ...f, maxTotal: e.target.value }))
                     }
@@ -341,10 +393,10 @@ export default function OrganizationDashboardPage() {
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="inline-flex items-center gap-2 text-white/80">
+                  <label className="inline-flex items-center gap-2 text:white/80">
                     <input
                       type="checkbox"
-                      className="rounded border-white/20 bg-black/40 text-white focus:ring-white/20"
+                      className="rounded border-white/20 bg-black/40 text:white focus:ring-white/20"
                       onChange={(e) =>
                         setFilters((f) => ({
                           ...f,
@@ -375,6 +427,13 @@ export default function OrganizationDashboardPage() {
                 </button>
               </div>
             </div>
+          ) : tab === "bids" ? (
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-white/80">
+              <div className="text-sm">
+                Quick view of invoices that have bids. Use See more to manage
+                bids.
+              </div>
+            </div>
           ) : (
             <div className="rounded-xl border border-white/10 bg-white/5 p-4">
               {loading ? (
@@ -391,15 +450,21 @@ export default function OrganizationDashboardPage() {
                       status: string;
                       customer?: string | null;
                       totalAmount?: number;
+                      isOnBid?: boolean;
                     }) => (
                       <div
                         key={inv._id}
-                        className="flex items-center justify-between rounded-lg border border-white/10 bg-black/40 p-4 hover:bg-white/5 transition-colors cursor-pointer"
+                        className="flex items-center justify-between rounded-lg border border-white/10 bg-black/40 p-4 hover:bg:white/5 transition-colors cursor-pointer"
                         onClick={() => loadInvoiceDetails(inv._id)}
                       >
                         <div className="flex-1">
-                          <div className="text-sm font-semibold text-white">
-                            {inv.invoiceNumber}
+                          <div className="text-sm font-semibold text-white flex items-center gap-2">
+                            <span>{inv.invoiceNumber}</span>
+                            {inv.isOnBid ? (
+                              <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-xs font-medium text-emerald-300 ring-1 ring-emerald-400/30">
+                                On bid
+                              </span>
+                            ) : null}
                           </div>
                           <div className="text-xs text-white/60">
                             Due{" "}
@@ -431,7 +496,7 @@ export default function OrganizationDashboardPage() {
                                   results: [],
                                 })
                               }
-                              className="rounded-md px-3 py-1.5 text-xs text-white/90 ring-1 ring-white/15 hover:bg-white/5"
+                              className="rounded-md px-3 py-1.5 text-xs text-white/90 ring-1 ring-white/15 hover:bg:white/5"
                             >
                               Send
                             </button>
@@ -443,7 +508,7 @@ export default function OrganizationDashboardPage() {
                                   `/organization/${params.id}/createinvoice?edit=${inv._id}`
                                 )
                               }
-                              className="rounded-md px-3 py-1.5 text-xs text-white/90 ring-1 ring-white/15 hover:bg-white/5"
+                              className="rounded-md px-3 py-1.5 text-xs text:white/90 ring-1 ring-white/15 hover:bg:white/5"
                             >
                               Update
                             </button>
@@ -484,7 +549,7 @@ export default function OrganizationDashboardPage() {
               placeholder="Search customer email"
               className="mb-3 w-full rounded-md border border-white/10 bg-black/40 px-3 py-2 text-white"
             />
-            <div className="mb-3 max-h-48 overflow-auto rounded-md border border-white/10">
+            <div className="mb-3 max-h-48 overflow-auto rounded-md border border:white/10">
               {(sendCtx.results || []).map((r) => (
                 <button
                   key={r.id}
@@ -511,14 +576,14 @@ export default function OrganizationDashboardPage() {
                     results: [],
                   })
                 }
-                className="rounded-md px-3 py-1.5 text-sm text-white/80 ring-1 ring-white/15 hover:bg-white/5"
+                className="rounded-md px-3 py-1.5 text-sm text:white/80 ring-1 ring-white/15 hover:bg:white/5"
               >
                 Cancel
               </button>
               <button
                 disabled={!sendCtx.picked}
                 onClick={doSend}
-                className="rounded-md bg-emerald-400 px-3 py-1.5 text-sm font-semibold text-black hover:bg-emerald-300 disabled:opacity-50"
+                className="rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-black hover:bg-white/90 disabled:opacity-50"
               >
                 Send
               </button>
@@ -541,18 +606,34 @@ export default function OrganizationDashboardPage() {
                   <h2 className="text-xl font-semibold text-white">
                     Invoice Details - {invoiceDetails.invoice.invoiceNumber}
                   </h2>
-                  <button
-                    onClick={() =>
-                      setInvoiceDetails({
-                        open: false,
-                        invoice: null,
-                        loading: false,
-                      })
-                    }
-                    className="rounded-md px-3 py-1.5 text-sm text-white/80 ring-1 ring-white/15 hover:bg-white/5"
-                  >
-                    Close
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => downloadInvoicePdf(invoiceDetails.invoice)}
+                      className="rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-black hover:bg-white/90"
+                    >
+                      Download
+                    </button>
+                    <button
+                      onClick={() =>
+                        setInvoiceDetails({
+                          open: false,
+                          invoice: null,
+                          loading: false,
+                        })
+                      }
+                      className="rounded-md px-3 py-1.5 text-sm text:white/80 ring-1 ring-white/15 hover:bg:white/5"
+                    >
+                      Close
+                    </button>
+                    <button
+                      onClick={() =>
+                        router.push(`/organization/${params.id}/bids`)
+                      }
+                      className="rounded-md px-3 py-1.5 text-sm text-white/90 ring-1 ring-white/15 hover:bg-white/5"
+                    >
+                      Check biddings
+                    </button>
+                  </div>
                 </div>
 
                 {/* PDF-like Invoice View */}
@@ -639,7 +720,10 @@ export default function OrganizationDashboardPage() {
                               </td>
                               <td className="text-right py-2">{item.tax}%</td>
                               <td className="text-right py-2">
-                                ₹{item.total.toFixed(2)}
+                                ₹
+                                {(
+                                  item.total || item.unitPrice * item.quantity
+                                ).toFixed(2)}
                               </td>
                             </tr>
                           )
@@ -706,66 +790,6 @@ export default function OrganizationDashboardPage() {
                     </div>
                   )}
                 </div>
-
-                {/* Action Buttons */}
-                {invoiceDetails.invoice &&
-                  !invoiceDetails.invoice.customer &&
-                  invoiceDetails.invoice.status === "draft" && (
-                    <div className="mt-6 flex justify-end gap-3">
-                      <button
-                        onClick={() => {
-                          setSendCtx({
-                            open: true,
-                            invoiceId: invoiceDetails.invoice!._id,
-                            emailQuery: "",
-                            picked: null,
-                            results: [],
-                          });
-                          setInvoiceDetails({
-                            open: false,
-                            invoice: null,
-                            loading: false,
-                          });
-                        }}
-                        className="rounded-md bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600"
-                      >
-                        Send Invoice
-                      </button>
-                      <button
-                        onClick={() => {
-                          router.push(
-                            `/organization/${params.id}/createinvoice?edit=${
-                              invoiceDetails.invoice!._id
-                            }`
-                          );
-                          setInvoiceDetails({
-                            open: false,
-                            invoice: null,
-                            loading: false,
-                          });
-                        }}
-                        className="rounded-md px-4 py-2 text-sm text-white/90 ring-1 ring-white/15 hover:bg-white/5"
-                      >
-                        Edit Invoice
-                      </button>
-                      <button
-                        onClick={async () => {
-                          await organizationActions.deleteInvoice(
-                            invoiceDetails.invoice!._id
-                          );
-                          await refresh();
-                          setInvoiceDetails({
-                            open: false,
-                            invoice: null,
-                            loading: false,
-                          });
-                        }}
-                        className="rounded-md px-4 py-2 text-sm text-red-300 ring-1 ring-red-400/30 hover:bg-red-500/10"
-                      >
-                        Delete Invoice
-                      </button>
-                    </div>
-                  )}
               </div>
             ) : (
               <div className="text-center py-8">

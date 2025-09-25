@@ -102,7 +102,7 @@ exports.chooseRole = asyncHandler(async (req, res, next) => {
   const { role } = req.body;
   const userId = req.user.id;
 
-  if (!['customer', 'organization'].includes(role)) {
+  if (!['customer', 'organization', 'financer'].includes(role)) {
     return next(new AppError('Invalid role selection', 400));
   }
 

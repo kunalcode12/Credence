@@ -56,8 +56,13 @@ const invoiceSchema = new mongoose.Schema(
     },
     currentOwner: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Organization',
       required: true,
+      refPath: 'currentOwnerModel',
+    },
+    currentOwnerModel: {
+      type: String,
+      enum: ['Organization', 'Financer'],
+      default: 'Organization',
     },
     items: [invoiceItemSchema],
     subtotal: {
@@ -111,6 +116,8 @@ const invoiceSchema = new mongoose.Schema(
     },
     notes: String,
     termsAndConditions: String,
+    // Indicates if this invoice is currently listed on the marketplace (open for bids)
+    isOnBid: { type: Boolean, default: false },
     paymentHistory: [
       {
         amount: Number,
@@ -132,6 +139,12 @@ const invoiceSchema = new mongoose.Schema(
     metadata: {
       type: Map,
       of: mongoose.Schema.Types.Mixed,
+    },
+    sold: {
+      isSold: { type: Boolean, default: false },
+      soldTo: { type: mongoose.Schema.Types.ObjectId, ref: 'Financer' },
+      soldAmount: { type: Number },
+      soldAt: { type: Date },
     },
   },
   {
@@ -192,6 +205,8 @@ invoiceSchema.pre('save', function (next) {
   if (this.paidAmount >= this.totalAmount && this.status !== 'cancelled') {
     this.status = 'paid';
     if (!this.paidAt) this.paidAt = new Date();
+    // If invoice fully paid, it cannot be on bid
+    this.isOnBid = false;
   } else if (this.paidAmount > 0 && this.status !== 'cancelled') {
     this.status = 'partially_paid';
   }

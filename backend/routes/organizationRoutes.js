@@ -23,10 +23,10 @@ router.get('/revenue', organizationController.getRevenue);
 // Invoice management
 router.post('/invoices', validateInvoice, organizationController.createInvoice);
 router.get('/invoices', organizationController.getInvoices);
-router.get(
-  '/invoices/by-due-date',
-  organizationController.getInvoicesByDueDate,
-);
+router.get('/invoices/with-bids', organizationController.getBiddedInvoices);
+router.get('/invoices/financed', organizationController.getFinancedInvoices);
+router.get('/invoices/by-due-date', organizationController.getBiddedInvoices);
+router.get('/invoices/sent/full', organizationController.getSentInvoicesFull);
 router.get('/invoices/:invoiceId', organizationController.getInvoiceById);
 router.patch('/invoices/:invoiceId', organizationController.updateInvoice);
 router.post('/invoices/:invoiceId/send', organizationController.sendInvoice);

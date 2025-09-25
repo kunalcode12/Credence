@@ -56,6 +56,7 @@ export type InvoiceSummary = {
   totalAmount: number;
   paidAmount?: number;
   status: string;
+  organization?: { name?: string; user?: { email?: string } };
 };
 
 export type Invoice = InvoiceSummary & {
@@ -86,13 +87,34 @@ export async function addCustomerBalance(amount: number) {
   );
 }
 
-export async function getCustomerInvoices(params?: { status?: string }) {
-  const qs = params?.status
-    ? `?status=${encodeURIComponent(params.status)}`
-    : "";
-  return apiFetch<CustomerInvoicesResponse>(`/customer/invoices${qs}`, {
-    auth: true,
-  });
+export async function getCustomerInvoices(params?: {
+  status?: string;
+  sortBy?: string;
+  order?: "asc" | "desc";
+  dueBefore?: string;
+  dueAfter?: string;
+  email?: string; // organization email filter
+  minTotal?: number;
+  maxTotal?: number;
+  unpaidOnly?: boolean;
+}) {
+  const search = new URLSearchParams();
+  if (params?.status) search.set("status", params.status);
+  if (params?.sortBy) search.set("sortBy", params.sortBy);
+  if (params?.order) search.set("order", params.order);
+  if (params?.dueBefore) search.set("dueBefore", params.dueBefore);
+  if (params?.dueAfter) search.set("dueAfter", params.dueAfter);
+  if (params?.email) search.set("email", params.email);
+  if (params?.minTotal != null) search.set("minTotal", String(params.minTotal));
+  if (params?.maxTotal != null) search.set("maxTotal", String(params.maxTotal));
+  if (params?.unpaidOnly) search.set("unpaidOnly", "true");
+  const qs = search.toString();
+  return apiFetch<CustomerInvoicesResponse>(
+    `/customer/invoices${qs ? `?${qs}` : ""}`,
+    {
+      auth: true,
+    }
+  );
 }
 
 export async function getCustomerInvoice(invoiceId: string) {
@@ -108,6 +130,15 @@ export async function payCustomerInvoice(invoiceId: string, amount: number) {
   }>(`/customer/invoices/${invoiceId}/pay`, {
     method: "POST",
     body: { amount },
+    auth: true,
+  });
+}
+
+export async function lookupOrganizationsByEmail(q: string) {
+  return apiFetch<{
+    success: boolean;
+    data: { results: { id: string; name: string; email: string }[] };
+  }>(`/customer/lookup/organizations?q=${encodeURIComponent(q)}`, {
     auth: true,
   });
 }

@@ -5,6 +5,7 @@ import {
   getOrgProfile,
   getOrgInvoices,
   getOrgInvoiceById,
+  getOrgRevenue,
   searchCustomersByEmail,
   createOrgInvoice,
   sendOrgInvoice,
@@ -30,13 +31,22 @@ export function useOrganizationOverview() {
     paid: [],
     createdUnsent: [],
   });
+  const [revenue, setRevenue] = useState<{
+    total: number;
+    pending: number;
+    received: number;
+  } | null>(null);
 
   async function refresh() {
     setLoading(true);
     try {
-      const res = await getOrgProfile();
-      setProfile(res.data.organization);
-      setInvoices(res.data.invoices);
+      const [profileRes, revenueRes] = await Promise.all([
+        getOrgProfile(),
+        getOrgRevenue(),
+      ]);
+      setProfile(profileRes.data.organization);
+      setInvoices(profileRes.data.invoices);
+      setRevenue(revenueRes.data);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to load organization");
     } finally {
@@ -48,7 +58,7 @@ export function useOrganizationOverview() {
     refresh();
   }, []);
 
-  return { loading, error, profile, invoices, refresh };
+  return { loading, error, profile, invoices, revenue, refresh };
 }
 
 export const organizationActions = {

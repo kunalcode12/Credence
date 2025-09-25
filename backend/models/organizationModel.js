@@ -88,6 +88,14 @@ const organizationSchema = new mongoose.Schema(
           amount: Number,
         },
       ],
+      financed: [
+        {
+          invoice: { type: mongoose.Schema.Types.ObjectId, ref: 'Invoice' },
+          soldTo: { type: mongoose.Schema.Types.ObjectId, ref: 'Financer' },
+          soldAmount: Number,
+          soldAt: { type: Date, default: Date.now },
+        },
+      ],
     },
     revenue: {
       total: { type: Number, default: 0 },

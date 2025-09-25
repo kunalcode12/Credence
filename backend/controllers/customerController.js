@@ -35,15 +35,49 @@ exports.createProfile = asyncHandler(async (req, res, next) => {
 
 exports.getProfile = asyncHandler(async (req, res, next) => {
   const customer = await Customer.findOne({ user: req.user.id })
-    .populate('invoices.all')
-    .populate('invoices.pending')
+    .populate({
+      path: 'invoices.all',
+      populate: [
+        {
+          path: 'organization',
+          select: 'name user',
+          populate: { path: 'user', select: 'email' },
+        },
+        {
+          path: 'currentOwner',
+          select: 'name user profile',
+          populate: { path: 'user', select: 'email' },
+        },
+      ],
+    })
+    .populate({
+      path: 'invoices.pending',
+      populate: [
+        {
+          path: 'organization',
+          select: 'name user',
+          populate: { path: 'user', select: 'email' },
+        },
+        {
+          path: 'currentOwner',
+          select: 'name user profile',
+          populate: { path: 'user', select: 'email' },
+        },
+      ],
+    })
     .populate({
       path: 'invoices.paid.invoice',
-      select: 'invoiceNumber totalAmount',
+      select: 'invoiceNumber totalAmount organization',
+      populate: {
+        path: 'organization',
+        select: 'name user',
+        populate: { path: 'user', select: 'email' },
+      },
     })
     .populate({
       path: 'invoices.paid.paidTo',
-      select: 'name',
+      select: 'name user profile',
+      populate: { path: 'user', select: 'email' },
     });
 
   if (!customer) {
@@ -133,35 +167,85 @@ exports.addBalance = asyncHandler(async (req, res, next) => {
 });
 
 exports.getInvoices = asyncHandler(async (req, res, next) => {
-  const { status, sortBy = 'dueDate', order = 'asc' } = req.query;
+  const {
+    status,
+    sortBy = 'dueDate',
+    order = 'asc',
+    dueBefore,
+    dueAfter,
+    email, // organization email
+    financerEmail,
+    minTotal,
+    maxTotal,
+    unpaidOnly,
+  } = req.query;
 
-  const customer = await Customer.findOne({ user: req.user.id })
-    .populate({
-      path: 'invoices.all',
-      match: status ? { status } : {},
-      options: {
-        sort: { [sortBy]: order === 'asc' ? 1 : -1 },
-      },
-    })
-    .populate({
-      path: 'invoices.pending',
-      populate: {
-        path: 'organization',
-        select: 'name',
-      },
-    });
+  const customer = await Customer.findOne({ user: req.user.id });
 
   if (!customer) {
     return next(new AppError('Customer profile not found', 404));
   }
 
+  const query = { customer: customer._id };
+  if (status) query.status = status;
+  if (unpaidOnly === 'true') query.status = { $nin: ['paid', 'cancelled'] };
+  if (dueBefore || dueAfter) {
+    query.dueDate = {};
+    if (dueBefore) query.dueDate.$lte = new Date(dueBefore);
+    if (dueAfter) query.dueDate.$gte = new Date(dueAfter);
+  }
+  if (minTotal || maxTotal) {
+    query.totalAmount = {};
+    if (minTotal) query.totalAmount.$gte = Number(minTotal);
+    if (maxTotal) query.totalAmount.$lte = Number(maxTotal);
+  }
+
+  // Filter by organization email
+  if (email) {
+    const users = await require('../models/userModal')
+      .find({ email: { $regex: email, $options: 'i' } })
+      .select('_id');
+    const userIds = users.map((u) => u._id);
+    const organizations = await require('../models/organizationModel')
+      .find({ user: { $in: userIds } })
+      .select('_id');
+    const orgIds = organizations.map((o) => o._id);
+    query.organization = { $in: orgIds };
+  }
+
+  // Filter by financer email
+  if (financerEmail) {
+    const users = await require('../models/userModal')
+      .find({ email: { $regex: financerEmail, $options: 'i' } })
+      .select('_id');
+    const Financer = require('../models/financerModel');
+    const financers = await Financer.find({
+      user: { $in: users.map((u) => u._id) },
+    }).select('_id');
+    const finIds = financers.map((f) => f._id);
+    query.currentOwner = { $in: finIds };
+    query.currentOwnerModel = 'Financer';
+  }
+
+  const invoices = await Invoice.find(query)
+    .populate({
+      path: 'organization',
+      select: 'name user',
+      populate: { path: 'user', select: 'email' },
+    })
+    .sort({ [sortBy]: order === 'asc' ? 1 : -1 });
+
   res.status(200).json({
     success: true,
     data: {
-      all: customer.invoices.all,
-      pending: customer.invoices.pending,
-      totalPending: customer.invoices.pending.length,
-      totalPaid: customer.invoices.paid.length,
+      all: invoices,
+      pending: invoices.filter(
+        (i) => i.status !== 'paid' && i.status !== 'cancelled',
+      ),
+      totalPending: invoices.filter(
+        (i) => i.status !== 'paid' && i.status !== 'cancelled',
+      ).length,
+      totalPaid: invoices.filter((i) => i.status === 'paid').length,
     },
   });
 });
@@ -214,8 +298,8 @@ exports.payInvoice = asyncHandler(async (req, res, next) => {
   }
 });
 
-// Get a single invoice belonging to the authenticated customer
-exports.getInvoice = asyncHandler(async (req, res, next) => {
+// Get a single invoice with full details belonging to the authenticated customer
+exports.getInvoiceById = asyncHandler(async (req, res, next) => {
   const { invoiceId } = req.params;
 
   const customer = await Customer.findOne({ user: req.user.id });
@@ -226,8 +310,22 @@ exports.getInvoice = asyncHandler(async (req, res, next) => {
 
   const Invoice = require('../models/invoiceModel');
   const invoice = await Invoice.findById(invoiceId)
-    .populate('organization', 'name')
-    .populate('customer', 'firstName lastName');
+    .populate({
+      path: 'organization',
+      select: 'name user',
+      populate: { path: 'user', select: 'email' },
+    })
+    .populate({
+      path: 'customer',
+      select: 'firstName lastName user',
+      populate: { path: 'user', select: 'email' },
+    })
+    .populate({
+      path: 'currentOwner',
+      select: 'name user profile',
+      populate: { path: 'user', select: 'email' },
+    })
+    .populate('items');
 
   if (!invoice) {
     return next(new AppError('Invoice not found', 404));
@@ -245,4 +343,42 @@ exports.getInvoice = asyncHandler(async (req, res, next) => {
     success: true,
     data: { invoice, isUnpaid },
   });
+});
+
+// Search organizations or financers by email (regex) and return minimal info
+exports.getOrganizationByEmail = asyncHandler(async (req, res, next) => {
+  const { q } = req.query;
+  if (!q || String(q).trim() === '')
+    return res.status(200).json({ success: true, data: { results: [] } });
+  const User = require('../models/userModal');
+  const users = await User.find({ email: { $regex: q, $options: 'i' } }).select(
+    '_id email',
+  );
+  const userIdToEmail = new Map(users.map((u) => [String(u._id), u.email]));
+  const Organization = require('../models/organizationModel');
+  const orgs = await Organization.find({
+    user: { $in: users.map((u) => u._id) },
+  }).select('_id user name');
+  const Financer = require('../models/financerModel');
+  const fins = await Financer.find({
+    user: { $in: users.map((u) => u._id) },
+  }).select('_id user profile');
+  const results = orgs
+    .map((o) => ({
+      id: String(o._id),
+      email: userIdToEmail.get(String(o.user)) || '',
+      name: o.name,
+      type: 'organization',
+    }))
+    .concat(
+      fins.map((f) => ({
+        id: String(f._id),
+        email: userIdToEmail.get(String(f.user)) || '',
+        name:
+          f.profile?.companyName ||
+          `${f.profile?.firstName || ''} ${f.profile?.lastName || ''}`.trim(),
+        type: 'financer',
+      })),
+    );
+  res.status(200).json({ success: true, data: { results } });
 });

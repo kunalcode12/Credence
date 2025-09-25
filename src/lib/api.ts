@@ -67,7 +67,7 @@ export type MeResponse = {
     profile: {
       exists: boolean;
       id: string | null;
-      type: "customer" | "organization" | null;
+      type: "customer" | "organization" | "financer" | null;
     };
   };
 };

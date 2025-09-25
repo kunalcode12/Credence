@@ -6,12 +6,16 @@ const customerRoutes = require('./customerRoutes');
 const organizationRoutes = require('./organizationRoutes');
 const invoiceRoutes = require('./invoiceRoutes');
 const notificationRoutes = require('./notificationRoutes');
+const marketplaceRoutes = require('./marketplaceRoutes');
+const financerRoutes = require('./financerRoutes');
 
 router.use('/auth', authRoutes);
 router.use('/customer', customerRoutes);
 router.use('/organization', organizationRoutes);
 router.use('/invoices', invoiceRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/marketplace', marketplaceRoutes);
+router.use('/financer', financerRoutes);
 
 // API documentation endpoint
 router.get('/', (req, res) => {

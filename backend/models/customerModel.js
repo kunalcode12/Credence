@@ -55,7 +55,12 @@ const customerSchema = new mongoose.Schema(
           },
           paidTo: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Organization',
+            refPath: 'invoices.paid.paidToModel',
+          },
+          paidToModel: {
+            type: String,
+            enum: ['Organization', 'Financer'],
+            default: 'Organization',
           },
           paidAt: {
             type: Date,
@@ -121,6 +126,8 @@ customerSchema.methods.updateBalance = async function (
 
 customerSchema.methods.payInvoice = async function (invoiceId, amount) {
   const Invoice = mongoose.model('Invoice');
+  const Organization = mongoose.model('Organization');
+  const Financer = mongoose.model('Financer');
   const invoice = await Invoice.findById(invoiceId).populate('organization');
 
   if (!invoice) throw new Error('Invoice not found');
@@ -135,6 +142,8 @@ customerSchema.methods.payInvoice = async function (invoiceId, amount) {
   if (invoice.paidAmount >= invoice.totalAmount) {
     invoice.status = 'paid';
     invoice.paidAt = Date.now();
+    // Ensure invoices paid are not considered open for bids
+    invoice.isOnBid = false;
   } else {
     invoice.status = 'partially_paid';
   }
@@ -145,12 +154,45 @@ customerSchema.methods.payInvoice = async function (invoiceId, amount) {
     this.invoices.pending = this.invoices.pending.filter(
       (id) => !id.equals(invoiceId),
     );
+    const paidToIsFinancer = invoice.currentOwnerModel === 'Financer';
+    const paidToId = paidToIsFinancer
+      ? invoice.currentOwner
+      : invoice.organization._id;
     this.invoices.paid.push({
       invoice: invoiceId,
-      paidTo: invoice.organization._id,
+      paidTo: paidToId,
+      paidToModel: paidToIsFinancer ? 'Financer' : 'Organization',
       amount: amount,
       transactionId: `TXN${Date.now()}`,
     });
+
+    // Record received to current owner
+    try {
+      if (paidToIsFinancer) {
+        const fin = await Financer.findById(paidToId);
+        if (fin) {
+          await fin.receivePayment(amount);
+        }
+      } else {
+        const org = await Organization.findById(invoice.organization._id);
+        if (org) {
+          org.invoices.received.push({
+            invoice: invoice._id,
+            fromCustomer: this._id,
+            amount,
+            paidAt: new Date(),
+          });
+          org.revenue.received += amount;
+          org.revenue.pending = Math.max(0, org.revenue.pending - amount);
+          await org.save();
+        }
+      }
+      // Remove from marketplace if listed
+      try {
+        const Marketplace = mongoose.model('Marketplace');
+        await Marketplace.deleteOne({ invoice: invoice._id });
+      } catch (e) {}
+    } catch (e) {}
   }
 
   return this.save();

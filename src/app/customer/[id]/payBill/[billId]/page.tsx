@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { customerActions } from "@/hooks/useCustomer";
 import { LoaderOverlay } from "@/components/ui/LoaderOverlay";
 import type { Invoice } from "@/lib/customer";
+import { getCustomerInvoice } from "@/lib/customer";
 
 export default function PayBillPage() {
   const router = useRouter();
@@ -18,7 +19,7 @@ export default function PayBillPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await customerActions.getInvoice(params.billId);
+        const res = await getCustomerInvoice(params.billId);
         setInvoice(res.data.invoice);
         const remaining =
           (res.data.invoice?.totalAmount || 0) -
@@ -62,6 +63,9 @@ export default function PayBillPage() {
             <div className="text-white/60">Organization</div>
             <div className="text-white">
               {invoice?.organization?.name || "—"}
+            </div>
+            <div className="text-xs text-white/60">
+              {(invoice as any)?.organization?.user?.email || ""}
             </div>
           </div>
           <div>

@@ -21,11 +21,14 @@ router.patch('/profile', customerController.updateProfile);
 router.get('/balance', customerController.getBalance);
 router.post('/balance/add', customerController.addBalance);
 router.get('/invoices', customerController.getInvoices);
-router.get('/invoices/:invoiceId', customerController.getInvoice);
+router.get('/invoices/:invoiceId', customerController.getInvoiceById);
 router.post(
   '/invoices/:invoiceId/pay',
   validatePayment,
   customerController.payInvoice,
 );
+
+// Filters and lookups
+router.get('/lookup/organizations', customerController.getOrganizationByEmail);
 
 module.exports = router;

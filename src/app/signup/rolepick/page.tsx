@@ -9,7 +9,7 @@ export default function RolePickPage() {
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function choose(role: "customer" | "organization") {
+  async function choose(role: "customer" | "organization" | "financer") {
     setLoading(role);
     setError(null);
     try {
@@ -20,6 +20,8 @@ export default function RolePickPage() {
       });
       if (role === "customer") {
         router.replace("/customerInformation");
+      } else if (role === "financer") {
+        router.replace("/financerInformation");
       } else {
         router.replace("/organizationinformation");
       }
@@ -83,6 +85,24 @@ export default function RolePickPage() {
             </div>
             <span className="rounded-md bg-white px-3 py-1 text-xs font-semibold text-black">
               {loading === "organization" ? "Redirecting…" : "Choose"}
+            </span>
+          </div>
+        </button>
+
+        <button
+          onClick={() => choose("financer")}
+          disabled={loading !== null}
+          className="group rounded-xl border border-white/10 bg-white/5 p-5 text-left hover:bg-white/10 disabled:opacity-60"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-base font-semibold text-white">
+                Im an Financer
+              </div>
+              <div className="text-sm text-white/60">Finance invoices</div>
+            </div>
+            <span className="rounded-md bg-white px-3 py-1 text-xs font-semibold text-black">
+              {loading === "Financer" ? "Redirecting…" : "Choose"}
             </span>
           </div>
         </button>

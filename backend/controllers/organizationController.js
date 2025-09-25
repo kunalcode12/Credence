@@ -6,6 +6,8 @@ const { AppError } = require('../utils/appError');
 const { asyncHandler } = require('../utils/asyncHandler');
 const { logger } = require('../utils/logger');
 const Notification = require('../models/notificationModel');
+const Marketplace = require('../models/marketplaceModel');
+const Financer = require('../models/financerModel');
 
 exports.createProfile = asyncHandler(async (req, res, next) => {
   const errors = validationResult(req);
@@ -34,27 +36,29 @@ exports.createProfile = asyncHandler(async (req, res, next) => {
   });
 });
 
-exports.getProfile = asyncHandler(async (req, res, next) => {
-  const organization = await Organization.findOne({ user: req.user.id })
-    .populate('invoices.created')
-    .populate({
-      path: 'invoices.sent.invoice',
-      select: 'invoiceNumber totalAmount status',
-    })
-    .populate({
-      path: 'invoices.sent.sentTo',
-      select: 'firstName lastName',
-    });
+// exports.getProfile = asyncHandler(async (req, res, next) => {
+//   const organization = await Organization.findOne({ user: req.user.id })
+//     .populate('invoices.created')
+//     .populate({
+//       path: 'invoices.sent.invoice',
+//       select: 'invoiceNumber totalAmount status',
+//     })
+//     .populate({
+//       path: 'invoices.sent.sentTo',
+//       select: 'firstName lastName',
+//     });
 
-  if (!organization) {
-    return next(new AppError('Organization profile not found', 404));
-  }
+//   console.log('This is first one.....');
 
-  res.status(200).json({
-    success: true,
-    data: { organization },
-  });
-});
+//   if (!organization) {
+//     return next(new AppError('Organization profile not found', 404));
+//   }
+
+//   res.status(200).json({
+//     success: true,
+//     data: { organization },
+//   });
+// });
 
 exports.updateProfile = asyncHandler(async (req, res, next) => {
   const errors = validationResult(req);
@@ -233,6 +237,11 @@ exports.getInvoiceById = asyncHandler(async (req, res, next) => {
   const invoice = await Invoice.findById(invoiceId)
     .populate({ path: 'customer', populate: { path: 'user', select: 'email' } })
     .populate('organization')
+    .populate({
+      path: 'sold.soldTo',
+      select: 'user profile',
+      populate: { path: 'user', select: 'email' },
+    })
     .populate('items');
 
   if (!invoice) {
@@ -402,6 +411,23 @@ exports.getInvoicesByDueDate = asyncHandler(async (req, res, next) => {
   });
 });
 
+// Return only invoices in 'sent' status with full details for listing on marketplace
+exports.getSentInvoicesFull = asyncHandler(async (req, res, next) => {
+  const organization = await Organization.findOne({ user: req.user.id });
+  if (!organization)
+    return next(new AppError('Organization profile not found', 404));
+
+  const invoices = await Invoice.find({
+    organization: organization._id,
+    status: 'sent',
+  })
+    .populate({ path: 'customer', populate: { path: 'user', select: 'email' } })
+    .populate('organization')
+    .populate('items');
+
+  return res.status(200).json({ success: true, data: { invoices } });
+});
+
 // Organization profile with categorized invoices
 exports.getProfile = asyncHandler(async (req, res, next) => {
   const organization = await Organization.findOne({ user: req.user.id })
@@ -426,6 +452,9 @@ exports.getProfile = asyncHandler(async (req, res, next) => {
   const createdUnsent = allInvoices.filter(
     (i) => i.status === 'draft' && !i.customer,
   );
+  const financed = allInvoices.filter((i) => i.sold?.isSold);
+
+  console.log('This is 2nd one....');
 
   res.status(200).json({
     success: true,
@@ -436,9 +465,45 @@ exports.getProfile = asyncHandler(async (req, res, next) => {
         sent,
         paid,
         createdUnsent,
+        financed,
       },
     },
   });
+});
+
+// List invoices with any bids
+exports.getBiddedInvoices = asyncHandler(async (req, res, next) => {
+  const organization = await Organization.findOne({ user: req.user.id });
+  if (!organization)
+    return next(new AppError('Organization profile not found', 404));
+  // Include listings with and without bids
+  const listings = await Marketplace.find({
+    organization: organization._id,
+    isOpen: true,
+  })
+    .populate('invoice')
+    .populate({
+      path: 'bids.financer',
+      select: 'user profile',
+      populate: { path: 'user', select: 'email' },
+    });
+  res.status(200).json({ success: true, data: { listings } });
+});
+
+// List invoices sold to financers
+exports.getFinancedInvoices = asyncHandler(async (req, res, next) => {
+  const organization = await Organization.findOne({ user: req.user.id });
+  if (!organization)
+    return next(new AppError('Organization profile not found', 404));
+  const invoices = await Invoice.find({
+    organization: organization._id,
+    'sold.isSold': true,
+  }).populate({
+    path: 'sold.soldTo',
+    select: 'user profile',
+    populate: { path: 'user', select: 'email' },
+  });
+  res.status(200).json({ success: true, data: { invoices } });
 });
 
 // Search customers by email (regex) and return minimal info

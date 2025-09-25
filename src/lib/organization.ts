@@ -38,6 +38,9 @@ export type OrgInvoicesResponse = {
   };
 };
 
+export type OrgRevenue = { total: number; pending: number; received: number };
+export type OrgRevenueResponse = { success: boolean; data: OrgRevenue };
+
 export type OrgInvoiceSummary = {
   _id: string;
   invoiceNumber: string;
@@ -53,6 +56,8 @@ export type OrgInvoiceSummary = {
     | "overdue"
     | "cancelled";
   customer?: string | null;
+  // Optional flag from backend indicating this invoice is listed on marketplace
+  isOnBid?: boolean;
 };
 
 export type OrgInvoice = OrgInvoiceSummary & {
@@ -68,6 +73,8 @@ export type OrgInvoice = OrgInvoiceSummary & {
   customer?: { _id: string; user?: { email: string } } | null;
   notes?: string;
   termsAndConditions?: string;
+  // Indicates if invoice is currently listed on marketplace for bids
+  isOnBid?: boolean;
 };
 
 export async function getOrgProfile() {
@@ -98,6 +105,45 @@ export async function getOrgInvoiceById(id: string) {
     `/organization/invoices/${id}`,
     { auth: true }
   );
+}
+
+export async function getOrgInvoicesWithBids() {
+  return apiFetch<{
+    success: boolean;
+    data: {
+      listings: Array<{
+        _id: string;
+        invoice: OrgInvoice;
+        organization: string;
+        isOpen: boolean;
+        bids: Array<{
+          _id: string;
+          amount: number;
+          status: string;
+          financer: {
+            _id: string;
+            user?: { email?: string };
+            profile?: {
+              firstName?: string;
+              lastName?: string;
+              companyName?: string;
+            };
+          };
+        }>;
+      }>;
+    };
+  }>(`/organization/invoices/with-bids`, { auth: true });
+}
+
+export async function getOrgSentInvoicesFull() {
+  return apiFetch<{
+    success: boolean;
+    data: { invoices: OrgInvoice[] };
+  }>(`/organization/invoices/sent/full`, { auth: true });
+}
+
+export async function getOrgRevenue() {
+  return apiFetch<OrgRevenueResponse>("/organization/revenue", { auth: true });
 }
 
 export type OrgInvoiceItem = {
