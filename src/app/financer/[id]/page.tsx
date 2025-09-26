@@ -8,6 +8,7 @@ import {
   financerActions,
   type FinancerInvoiceDetails,
 } from "@/hooks/useFinancer";
+import Link from "next/link";
 
 export default function FinancerDashboardPage() {
   const router = useRouter();
@@ -21,6 +22,7 @@ export default function FinancerDashboardPage() {
     refresh,
     setData,
   } = useFinancerOverview();
+  console.log("overview", overview);
 
   const [bought, setBought] = useState<{
     boughtInvoices: Array<{
@@ -55,6 +57,7 @@ export default function FinancerDashboardPage() {
     invoiceId: string,
     context?: { listingId?: string; bidId?: string }
   ) {
+    console.log("openInvoice", invoiceId, context);
     setDetailsDialog({
       open: true,
       invoice: null,
@@ -69,6 +72,8 @@ export default function FinancerDashboardPage() {
         loading: false,
         fromContext: context || null,
       });
+
+      console.log(res.data);
     } catch {
       setDetailsDialog({
         open: true,
@@ -254,11 +259,7 @@ export default function FinancerDashboardPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() =>
-                            router.push(
-                              `/marketplace/${b.invoiceId}/${b.listingId}`
-                            )
-                          }
+                          onClick={() => router.push(`/marketplace`)}
                           className="rounded-md px-2 py-1 text-xs text-white/90 ring-1 ring-white/15 hover:bg-white/5"
                         >
                           Go to marketplace
@@ -336,16 +337,14 @@ export default function FinancerDashboardPage() {
                           </button>
                         </div>
                       ))}
-                      <button
-                        onClick={() =>
-                          router.push(
-                            `/marketplace/${b.invoiceId}/${b.listingId}`
-                          )
-                        }
-                        className="ml-auto rounded-md px-2 py-1 text-xs text-white/90 ring-1 ring-white/15 hover:bg-white/5"
-                      >
-                        Go to marketplace
-                      </button>
+                      <Link href="/marketplace">
+                        <button
+                          // onClick={() => router.push(`/marketplace`)}
+                          className="ml-auto rounded-md px-2 py-1 text-xs text-white/90 ring-1 ring-white/15 hover:bg-white/5"
+                        >
+                          Go to marketplace
+                        </button>
+                      </Link>
                     </div>
                   </div>
                 ))}

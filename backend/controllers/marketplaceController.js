@@ -170,6 +170,7 @@ exports.acceptBid = asyncHandler(async (req, res, next) => {
   const invoice = await Invoice.findById(listing.invoice._id);
   invoice.currentOwner = winner._id;
   invoice.currentOwnerModel = 'Financer';
+  // invoice.isOnBid = false;
   invoice.sold = {
     isSold: true,
     soldTo: winner._id,

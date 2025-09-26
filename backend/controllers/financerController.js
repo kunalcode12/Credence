@@ -137,10 +137,11 @@ exports.getOverview = asyncHandler(async (req, res, next) => {
     const myBids = listing.bids.filter(
       (b) => String(b.financer) === String(financer._id),
     );
+
     const activeMyBids = myBids.filter((b) => b.status === 'active');
     return {
       listingId: String(listing._id),
-      invoiceId: String(listing.invoice),
+      invoiceId: String(listing.invoice._id),
       highestOnListing,
       activeBids: activeMyBids.map((b) => ({
         bidId: String(b._id),
