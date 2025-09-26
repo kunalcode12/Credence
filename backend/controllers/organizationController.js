@@ -420,6 +420,7 @@ exports.getSentInvoicesFull = asyncHandler(async (req, res, next) => {
   const invoices = await Invoice.find({
     organization: organization._id,
     status: 'sent',
+    'sold.isSold': { $ne: true },
   })
     .populate({ path: 'customer', populate: { path: 'user', select: 'email' } })
     .populate('organization')
@@ -441,7 +442,13 @@ exports.getProfile = asyncHandler(async (req, res, next) => {
     return next(new AppError('Organization profile not found', 404));
   }
 
-  const allInvoices = await Invoice.find({ organization: organization._id });
+  const allInvoices = await Invoice.find({
+    organization: organization._id,
+  }).populate({
+    path: 'sold.soldTo',
+    select: 'user profile',
+    populate: { path: 'user', select: 'email' },
+  });
   const paid = allInvoices.filter((i) => i.status === 'paid');
   const sent = allInvoices.filter(
     (i) =>
@@ -449,6 +456,8 @@ exports.getProfile = asyncHandler(async (req, res, next) => {
       i.status === 'viewed' ||
       i.status === 'partially_paid',
   );
+  // Exclude financed (sold) invoices from sent
+  const sentUnfinanced = sent.filter((i) => !(i.sold && i.sold.isSold));
   const createdUnsent = allInvoices.filter(
     (i) => i.status === 'draft' && !i.customer,
   );
@@ -462,7 +471,7 @@ exports.getProfile = asyncHandler(async (req, res, next) => {
       organization,
       invoices: {
         all: allInvoices,
-        sent,
+        sent: sentUnfinanced,
         paid,
         createdUnsent,
         financed,

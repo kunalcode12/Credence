@@ -115,7 +115,7 @@ export default function ListOnMarketPage() {
             onClick={listAll}
             className="rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-black hover:bg-white/90 disabled:opacity-50"
             disabled={
-              busy || (invoices.length > 0 && invoices.every((i) => i.isOnBid))
+              busy || (invoices.length <= 0 && invoices.every((i) => i.isOnBid))
             }
           >
             List all

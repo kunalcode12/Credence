@@ -68,6 +68,9 @@ export default function OrgBidsPage() {
         { method: "POST", auth: true }
       );
       setListings((prev) => prev.filter((l) => l._id !== listingId));
+      // Close the bids dialog after successful acceptance
+      setShowBids(false);
+      setSelected(null);
     } finally {
       setBusy(false);
     }

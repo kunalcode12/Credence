@@ -25,11 +25,28 @@ export function useOrganizationOverview() {
     sent: OrgInvoiceSummary[];
     paid: OrgInvoiceSummary[];
     createdUnsent: OrgInvoiceSummary[];
+    financed?: (OrgInvoiceSummary & {
+      sold?: {
+        isSold: boolean;
+        soldTo?: {
+          _id: string;
+          user?: { email?: string };
+          profile?: {
+            companyName?: string;
+            firstName?: string;
+            lastName?: string;
+          };
+        };
+        soldAmount?: number;
+        soldAt?: string;
+      };
+    })[];
   }>({
     all: [],
     sent: [],
     paid: [],
     createdUnsent: [],
+    financed: [],
   });
   const [revenue, setRevenue] = useState<{
     total: number;

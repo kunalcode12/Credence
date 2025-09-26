@@ -23,6 +23,7 @@ export default function OrganizationDashboardPage() {
     | "overdue"
     | "filter"
     | "bids"
+    | "financed"
   >("profile");
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
@@ -88,6 +89,7 @@ export default function OrganizationDashboardPage() {
       return (invoices.all || []).filter(
         (i: { status: string }) => i.status === "overdue"
       );
+    if (tab === "financed") return (invoices as any).financed || [];
     return [];
   }, [tab, invoices]);
 
@@ -231,6 +233,7 @@ export default function OrganizationDashboardPage() {
                 "overdue",
                 "filter",
                 "bids",
+                "financed",
               ] as const
             ).map((t) => (
               <button
@@ -442,94 +445,128 @@ export default function OrganizationDashboardPage() {
                 <div className="text-white/60">No invoices.</div>
               ) : (
                 <div className="grid gap-3">
-                  {list.map(
-                    (inv: {
-                      _id: string;
-                      invoiceNumber: string;
-                      dueDate?: string;
-                      status: string;
-                      customer?: string | null;
-                      totalAmount?: number;
-                      isOnBid?: boolean;
-                    }) => (
-                      <div
-                        key={inv._id}
-                        className="flex items-center justify-between rounded-lg border border-white/10 bg-black/40 p-4 hover:bg:white/5 transition-colors cursor-pointer"
-                        onClick={() => loadInvoiceDetails(inv._id)}
-                      >
-                        <div className="flex-1">
-                          <div className="text-sm font-semibold text-white flex items-center gap-2">
-                            <span>{inv.invoiceNumber}</span>
-                            {inv.isOnBid ? (
-                              <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-xs font-medium text-emerald-300 ring-1 ring-emerald-400/30">
-                                On bid
+                  {list.map((inv: any) => (
+                    <div
+                      key={inv._id}
+                      className="flex items-center justify-between rounded-lg border border-white/10 bg-black/40 p-4 hover:bg:white/5 transition-colors cursor-pointer"
+                      onClick={() => loadInvoiceDetails(inv._id)}
+                    >
+                      <div className="flex-1">
+                        <div className="text-sm font-semibold text-white flex items-center gap-2">
+                          <span>{inv.invoiceNumber}</span>
+                          {tab !== "financed" && inv.isOnBid ? (
+                            <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-xs font-medium text-emerald-300 ring-1 ring-emerald-400/30">
+                              On bid
+                            </span>
+                          ) : null}
+                          {tab === "all" && inv?.sold?.isSold ? (
+                            <span className="rounded-full bg-sky-500/20 px-2 py-0.5 text-xs font-medium text-sky-300 ring-1 ring-sky-400/30">
+                              Sold
+                            </span>
+                          ) : null}
+                          {tab === "financed" ? (
+                            <span className="rounded-full bg-sky-500/20 px-2 py-0.5 text-xs font-medium text-sky-300 ring-1 ring-sky-400/30">
+                              Sold
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="text-xs text-white/60">
+                          {tab === "financed" ? (
+                            <>
+                              Sold at{" "}
+                              {inv?.sold?.soldAt
+                                ? new Date(inv.sold.soldAt).toLocaleDateString()
+                                : "—"}
+                            </>
+                          ) : (
+                            <>
+                              Due{" "}
+                              {inv.dueDate
+                                ? new Date(inv.dueDate).toLocaleDateString()
+                                : "—"}
+                            </>
+                          )}
+                          {inv.totalAmount && (
+                            <span className="ml-2">
+                              • ₹{inv.totalAmount.toLocaleString()}
+                            </span>
+                          )}
+                        </div>
+                        {tab === "financed" ? (
+                          <div className="text-xs text-white/60">
+                            Sold to:{" "}
+                            {inv?.sold?.soldTo?.profile?.companyName ||
+                              `${inv?.sold?.soldTo?.profile?.firstName || ""} ${
+                                inv?.sold?.soldTo?.profile?.lastName || ""
+                              }`.trim() ||
+                              "Financer"}
+                            {inv?.sold?.soldTo?.user?.email ? (
+                              <span className="ml-1 text-white/40">
+                                • {inv.sold.soldTo.user.email}
                               </span>
                             ) : null}
                           </div>
-                          <div className="text-xs text-white/60">
-                            Due{" "}
-                            {inv.dueDate
-                              ? new Date(inv.dueDate).toLocaleDateString()
-                              : "—"}
-                            {inv.totalAmount && (
-                              <span className="ml-2">
-                                • ₹{inv.totalAmount.toLocaleString()}
-                              </span>
-                            )}
-                          </div>
+                        ) : (
                           <div className="text-xs text-white/40 capitalize">
-                            Status: {inv.status.replace("_", " ")}
+                            Status:{" "}
+                            {inv?.sold?.isSold
+                              ? "sold"
+                              : inv.status.replace("_", " ")}
                           </div>
-                        </div>
-                        <div
-                          className="flex items-center gap-2"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {!inv.customer && inv.status === "draft" ? (
-                            <button
-                              onClick={() =>
-                                setSendCtx({
-                                  open: true,
-                                  invoiceId: inv._id,
-                                  emailQuery: "",
-                                  picked: null,
-                                  results: [],
-                                })
-                              }
-                              className="rounded-md px-3 py-1.5 text-xs text-white/90 ring-1 ring-white/15 hover:bg:white/5"
-                            >
-                              Send
-                            </button>
-                          ) : null}
-                          {!inv.customer && inv.status === "draft" ? (
-                            <button
-                              onClick={() =>
-                                router.push(
-                                  `/organization/${params.id}/createinvoice?edit=${inv._id}`
-                                )
-                              }
-                              className="rounded-md px-3 py-1.5 text-xs text:white/90 ring-1 ring-white/15 hover:bg:white/5"
-                            >
-                              Update
-                            </button>
-                          ) : null}
-                          {!inv.customer && inv.status === "draft" ? (
-                            <button
-                              onClick={async () => {
-                                await organizationActions.deleteInvoice(
-                                  inv._id
-                                );
-                                await refresh();
-                              }}
-                              className="rounded-md px-3 py-1.5 text-xs text-red-300 ring-1 ring-red-400/30 hover:bg-red-500/10"
-                            >
-                              Delete
-                            </button>
-                          ) : null}
-                        </div>
+                        )}
                       </div>
-                    )
-                  )}
+                      <div
+                        className="flex items-center gap-2"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {tab !== "financed" &&
+                        !inv.customer &&
+                        inv.status === "draft" ? (
+                          <button
+                            onClick={() =>
+                              setSendCtx({
+                                open: true,
+                                invoiceId: inv._id,
+                                emailQuery: "",
+                                picked: null,
+                                results: [],
+                              })
+                            }
+                            className="rounded-md px-3 py-1.5 text-xs text-white/90 ring-1 ring-white/15 hover:bg:white/5"
+                          >
+                            Send
+                          </button>
+                        ) : null}
+                        {tab !== "financed" &&
+                        !inv.customer &&
+                        inv.status === "draft" ? (
+                          <button
+                            onClick={() =>
+                              router.push(
+                                `/organization/${params.id}/createinvoice?edit=${inv._id}`
+                              )
+                            }
+                            className="rounded-md px-3 py-1.5 text-xs text:white/90 ring-1 ring-white/15 hover:bg:white/5"
+                          >
+                            Update
+                          </button>
+                        ) : null}
+                        {tab !== "financed" &&
+                        !inv.customer &&
+                        inv.status === "draft" ? (
+                          <button
+                            onClick={async () => {
+                              await organizationActions.deleteInvoice(inv._id);
+                              await refresh();
+                            }}
+                            className="rounded-md px-3 py-1.5 text-xs text-red-300 ring-1 ring-red-400/30 hover:bg-red-500/10"
+                          >
+                            Delete
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -625,14 +662,16 @@ export default function OrganizationDashboardPage() {
                     >
                       Close
                     </button>
-                    <button
-                      onClick={() =>
-                        router.push(`/organization/${params.id}/bids`)
-                      }
-                      className="rounded-md px-3 py-1.5 text-sm text-white/90 ring-1 ring-white/15 hover:bg-white/5"
-                    >
-                      Check biddings
-                    </button>
+                    {invoiceDetails.invoice.isOnBid ? (
+                      <button
+                        onClick={() =>
+                          router.push(`/organization/${params.id}/bids`)
+                        }
+                        className="rounded-md px-3 py-1.5 text-sm text-white/90 ring-1 ring-white/15 hover:bg-white/5"
+                      >
+                        Check biddings
+                      </button>
+                    ) : null}
                   </div>
                 </div>
 
