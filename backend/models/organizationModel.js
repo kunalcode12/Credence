@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { couldStartTrivia } = require('typescript');
 
 const organizationSchema = new mongoose.Schema(
   {
@@ -157,7 +158,9 @@ organizationSchema.index({ createdAt: -1 });
 // Methods
 organizationSchema.methods.generateInvoiceNumber = function () {
   const number = `${this.invoicePrefix}-${String(this.nextInvoiceNumber).padStart(6, '0')}`;
-  this.nextInvoiceNumber += 1;
+  this.nextInvoiceNumber += 2;
+  // console.log('Next Invoice Number:', this.nextInvoiceNumber);
+  // console.log('Generated Invoice Number:', number);
   return number;
 };
 

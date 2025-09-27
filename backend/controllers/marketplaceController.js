@@ -20,8 +20,10 @@ exports.create = asyncHandler(async (req, res, next) => {
   if (!org) return next(new AppError('Organization profile not found', 404));
 
   const { invoiceId, organizationId } = req.body;
+  // console.log('organizationId:', organizationId);
+  // console.log('orgId:', org);
   if (organizationId) {
-    if (String(organizationId) !== String(org.user))
+    if (String(organizationId) !== String(org._id))
       return next(new AppError('Unauthorized organization', 403));
     const invoices = await Invoice.find({
       organization: org._id,
