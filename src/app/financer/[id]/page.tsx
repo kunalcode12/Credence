@@ -131,6 +131,12 @@ export default function FinancerDashboardPage() {
           <div className="text-sm text-white/60">Dashboard</div>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.push("/marketplace")}
+            className="rounded-md bg-blue-500 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-400"
+          >
+            Go to marketplace
+          </button>
           <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-white/80">
             <span className="text-white/60">Balance:</span>
             <span className="ml-2 font-semibold text-white">
