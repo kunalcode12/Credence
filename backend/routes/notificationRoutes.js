@@ -5,7 +5,7 @@ const notificationController = require('../controllers/notificationController');
 
 router.use(authenticate);
 router.get('/', notificationController.list);
-// router.post('/seen/all', notificationController.markAllSeen);
+router.post('/seen/all', notificationController.markAllSeen);
 router.post('/:id/seen', notificationController.markSeen);
 router.post('/run/due-checks', notificationController.runDueChecks);
 
