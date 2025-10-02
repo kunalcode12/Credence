@@ -33,11 +33,11 @@ exports.runDueChecks = asyncHandler(async (req, res) => {
   const in7d = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   const in1d = new Date(Date.now() + 1 * 24 * 60 * 60 * 1000);
 
-  const invoices = await Invoice.find({
-    status: { $in: ['draft', 'sent', 'viewed', 'partially_paid', 'overdue'] },
-  }).select(
-    '_id customer organization dueDate invoiceNumber status totalAmount paidAmount',
-  );
+  // const invoices = await Invoice.find({
+  //   status: { $in: ['draft', 'sent', 'viewed', 'partially_paid', 'overdue'] },
+  // }).select(
+  //   '_id customer organization dueDate invoiceNumber status totalAmount paidAmount',
+  // );
 
   let created = 0;
   for (const inv of invoices) {
