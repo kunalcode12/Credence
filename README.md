@@ -1,6 +1,6 @@
 # Credence - DeFi Invoice Financing on Solana
 
-[![Demo Video](https://img.shields.io/badge/Demo-Watch%20Video-red?style=for-the-badge&logo=youtube)](https://youtu.be/TlZeikojPnw)
+[![Demo Video](https://img.shields.io/badge/Demo-Watch%20Video-red?style=for-the-badge&logo=youtube)](https://youtu.be/AxYOVmEGzwM)
 [![Solana](https://img.shields.io/badge/Solana-Blockchain-purple?style=for-the-badge&logo=solana)](https://solana.com/)
 [![Token-2022](https://img.shields.io/badge/Token--2022-Program-blue?style=for-the-badge)](https://spl.solana.com/token-2022)
 [![Finternet](https://img.shields.io/badge/Finternet-Protocol-orange?style=for-the-badge)](https://finternet.org/)
@@ -233,4 +233,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 **Credence** - *Connecting businesses, banks, and DeFi into one seamless system.*
 
-[![Demo Video](https://img.shields.io/badge/Demo-Watch%20Video-red?style=for-the-badge&logo=youtube)](https://youtu.be/TlZeikojPnw)
+[![Demo Video](https://img.shields.io/badge/Demo-Watch%20Video-red?style=for-the-badge&logo=youtube)](https://youtu.be/AxYOVmEGzwM)
