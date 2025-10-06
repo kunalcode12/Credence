@@ -26,7 +26,7 @@ Credence introduces a **Solana-native model** for invoice financing that combine
 
 ###  Invoice NFT Lifecycle Demonstration
 
-![](public/Screenshot 2025-09-28 224445.png)
+![Invoice NFT Lifecycle](public/Screenshot%202025-09-28%20224445.png)
 
 *Figure 1: Complete lifecycle of an invoice NFT on Solana blockchain, showing creation, partial payments, full settlement, and automatic burning.*
 
