@@ -31,8 +31,9 @@ Credence introduces a **Solana-native model** for invoice financing that combine
 *Figure 1: Complete lifecycle of an invoice NFT on Solana blockchain, showing creation, partial payments, full settlement, and automatic burning.*
 
 ### 🔧 Console Log Demonstration
+Screenshot 2025-09-24 221648.png
 
-![](https://github.com/kunalcode12/Credence/blob/03762c143e6507733a95fb901cd06b7a34ea5944/public/Screenshot%202025-09-24%20221648.png)
+![](public/Screenshot%202025-09-24%20221648.png)
 
 *Figure 2: Real-time console output showing invoice NFT operations on Solana, including transaction timing and state changes.*
 
